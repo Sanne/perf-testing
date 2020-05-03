@@ -7,6 +7,9 @@ import org.junit.jupiter.api.Test;
 
 import javax.persistence.Table;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
@@ -17,7 +20,7 @@ import static org.hamcrest.CoreMatchers.not;
 public class ExampleResourceTest {
 
 
-//    JDBC
+    //    JDBC
     @Test
     public void testJdbcAllDataEndpoint() {
         given()
@@ -49,7 +52,7 @@ public class ExampleResourceTest {
                 .body(containsString("Bar"));
     }
 
-//JPA
+    //JPA
     @Test
     public void testJpaAllDataEndpoint() {
         given()
@@ -81,7 +84,7 @@ public class ExampleResourceTest {
                 .body(containsString("Bar"));
     }
 
-//Panache
+    //Panache
     @Test
     public void testPanacheAllDataEndpoint() {
         given()
@@ -113,7 +116,7 @@ public class ExampleResourceTest {
                 .body(containsString("Bar"));
     }
 
-//Stateless
+    //Stateless
     @Test
     public void testStatlessAllDataEndpoint() {
         given()
@@ -134,6 +137,7 @@ public class ExampleResourceTest {
                 .body(containsString("Foo"))
                 .body(not(containsString("Bar")));
     }
+
     @Test
     public void testStatlessFindBar() {
         given()

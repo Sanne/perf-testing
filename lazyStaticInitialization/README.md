@@ -13,11 +13,15 @@ The fastest and easiest to reason about method to lazily-instantiate a cachable 
 
 Expensive objects can either take computation time, or use memory.  If you have repeated initialization of expensive ephemeral objects in your hot code path, one technique to improve application throughput/responsiveness is to cache the expensive object when it is first instantiated.  This is especially true if you object is also immutable. 
 
+The following patterns show the different approaches to instantiating object instances
+
+## Eager Initialization
+
 ### Direct Instantiation
 
 example: [DirectInstantiation.java](src/main/java/org/johara/provider/DirectInstantiation.java)
 
-The following example would initialize and discard the `ExpensiveObject` instance with each invocation.
+The following example would instantiate and discard the `ExpensiveObject` instance with each invocation. Here there is no caching, and the cost of creating the object is paid every time your code is invoked. 
 ```java
     {
     ...
@@ -31,7 +35,7 @@ The following example would initialize and discard the `ExpensiveObject` instanc
 
 example: [CachedEagerInstantiation.java](src/main/java/org/johara/provider/CachedEagerInstantiation.java)
 
-The following example publishes a cached instance of `ExpensiveObject` safely (although no guarantee can be made about thread safe access of `expensiveObject` fields), however `ExpensiveObject` is instantiated eagerly when your class is loaded;
+The following example caches instance of `ExpensiveObject` safely (although no guarantee can be made about thread safe access of `expensiveObject` fields), however `ExpensiveObject` is instantiated eagerly when your class is loaded.  This can slow start up time of your application, or add to memory usage especially if there are a lot of or large objects being cached. 
 ```java
     private final ExpensiveObject expensiveObject = ExpensiveObjectFactory.getExpensiveObject();
     
@@ -42,13 +46,16 @@ The following example publishes a cached instance of `ExpensiveObject` safely (a
     }
 ```
 
+## Lazy Initialization
+
+Sometimes you do not need to instantiate an instance of `ExpensiveObject` but can wait until an instance of `ExpensiveObject` is required.  Waiting until you need an instance before instantiating is called *Lazy Initialization*.  One issue with *Lazy Initialization* is the field used to cache the instance of `ExpensiveObject` needs to be published safely.
+
 ### Double Checked Locking
 
 example: [DclStaticConfigProvider.java](src/main/java/org/johara/provider/DclStaticConfigProvider.java)
 
-Sometimes your code does not always need to instantiate an instance of `ExpensiveObject` but can wait until an instance of `ExpensiveObject` is required.  Waiting until you need an instance before instantiating is called *Lazy Idealization*.  One issue with *Lazy Initialization* is the field used to cache the instance of `ExpensiveObject` needs to be published safely.
 
-One strategy for safely publishing a cached, lazily-loaded object is to use Double Checked Locking [^1];
+One strategy for safely publishing a cached, lazily-loaded object is to use Double Checked Locking [^1]  The purpose of Double Checked locking is to check to see if the object has been instantiated, and use that object reference, before creating a cached object.
 
 ```java
     private static volatile ExpensiveObject expensiveObject;
@@ -71,15 +78,15 @@ One strategy for safely publishing a cached, lazily-loaded object is to use Doub
     }
 ```
 
-Double Checked Locking works from JDK1.5+ but comes with some caveats;
+The Double Checked Locking example above works from JDK1.5+ but comes with some caveats;
 
  -  expensiveObject has to be defined as `volatile` to ensure that all subsequent reads from different threads see the safely published instance.
  -  expensiveObject is mutable. It is possible to update `private static volatile ExpensiveObject expensiveObject` after it has been initialized. This may be a requirement, and if it is a requirement, all writes to `expensiveObject` need to be guarded by the same lock `synchronized (SomeLock.class)`.
 
 There are some variations on the above theme, for additional implementations please refer to;
  
- - [DclInstanceConfigProvider.java](src/main/java/org/johara/provider/DclInstanceConfigProvider.java) :
- - [DclLocalRefInstanceConfigProvider.java](src/main/java/org/johara/provider/DclLocalRefInstanceConfigProvider.java) :
+ - [DclInstanceConfigProvider.java](src/main/java/org/johara/provider/DclInstanceConfigProvider.java) : Double Checked Locking where the cached object is stored in an ConfigProvider instance
+ - [DclLocalRefInstanceConfigProvider.java](src/main/java/org/johara/provider/DclLocalRefInstanceConfigProvider.java) : Double Checked Locking where a local reference is 
  - [DclLocalRefStaticConfigProvider.java](src/main/java/org/johara/provider/DclLocalRefStaticConfigProvider.java) :
  - [DclVarHandleInstanceConfigProvider.java](src/main/java/org/johara/provider/DclVarHandleInstanceConfigProvider.java) :
 
@@ -159,7 +166,7 @@ $ java -jar ./target/benchmarks.jar  -t 32
 |LazyInitializationBenchmark.helperStaticProvider         |avgt   |10  |14.078   |± 0.356  |ns/op
 
 
-[^2]: System under test; 32 core x Intel® Xeon® CPU E5-2640 v3 @ 2.60GHz; Red Hat Enterprise Linux Server release 7.6 (3.10.0-693.25.2.el7.x86_64);  262GB
+[^2]: System under test; openjdk version "11.0.6" 2020-01-14;  32 core x Intel® Xeon® CPU E5-2640 v3 @ 2.60GHz; Red Hat Enterprise Linux Server release 7.6 (3.10.0-693.25.2.el7.x86_64);  262GB
 
 
 ## Conclusion
