@@ -1,15 +1,12 @@
 package io.quarkus.perf.service;
 
 import io.quarkus.perf.entity.DataEntity;
-import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
 import org.hibernate.query.NativeQuery;
 import org.jboss.logging.Logger;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.persistence.EntityManagerFactory;
 import java.util.List;
 
 @Singleton
@@ -18,14 +15,7 @@ public class StatelessSessionDataService {
     private static final Logger LOG = Logger.getLogger(StatelessSessionDataService.class);
 
     @Inject
-    EntityManagerFactory emf;
-
-    private static SessionFactory sessionFactory;
-
-    @PostConstruct
-    void init(){
-        sessionFactory = emf.unwrap(SessionFactory.class);
-    }
+    StatelessSession session;
 
     public List<DataEntity> getAllData(){
 
@@ -33,7 +23,6 @@ public class StatelessSessionDataService {
 
         List<DataEntity> results = null;
 
-        StatelessSession session =  sessionFactory.openStatelessSession();
         session.beginTransaction();
 
         try {
@@ -54,7 +43,6 @@ public class StatelessSessionDataService {
 
         DataEntity result = null;
 
-        StatelessSession session =  sessionFactory.openStatelessSession();
         session.beginTransaction();
 
         try {
